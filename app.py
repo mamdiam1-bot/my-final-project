@@ -50,8 +50,8 @@ def chat():
             reply = response_data['candidates'][0]['content']['parts'][0]['text']
 
             # 2. שמירה ל-Supabase
-            db("INSERT INTO chats (user_msg, bot_res, lang) VALUES (:u, :r, :l)", u=user_input, r=reply, l="Hebrew")
-                       u=user_input, r=reply, l="Hebrew")
+            db("INSERT INTO chats (user_msg, bot_res, lang) VALUES (:u, :r, :l)",
+               u=user_input, r=reply, l="Hebrew")
 
             return jsonify({"reply": reply})
         else:
