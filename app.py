@@ -47,8 +47,8 @@ def chat():
         if response.status_code == 200:
             reply = response_data['candidates'][0]['content']['parts'][0]['text']
 
-            db("INSERT INTO chats (user_msg, bot_res, lang) VALUES (:u, :r, :l)",
-               u=user_input, r=reply, l="Hebrew")
+            db.execute("INSERT INTO chats (user_msg, bot_res, lang) VALUES (:u, :r, :l)",
+                       u=user_input, r=reply, l="Hebrew")
 
             return jsonify({"reply": reply})
         else:
@@ -60,9 +60,9 @@ def chat():
 
 @app.route("/history")
 def history():
-    chats = db("SELECT * FROM chats ORDER BY id DESC")
+    chats = db.execute("SELECT * FROM chats ORDER BY id DESC")
     return render_template("history.html", chats=chats)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=path)
