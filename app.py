@@ -22,7 +22,7 @@ def chat():
     user_input = request.form.get("message", "")
     image_file = request.files.get("image")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
     parts = [{"text": f"ענה כמורה לגיאוגרפיה והיסטוריה בעברית. אל תשלח פקודות חיצוניות, רק טקסט: {user_input}"}]
 
     if image_file:
