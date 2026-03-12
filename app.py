@@ -8,7 +8,7 @@ from cs50 import SQL
 load_dotenv(override=True)
 app = Flask(__name__)
 
-connection_string = "postgresql://postgres:MaAm%40036355972@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=disable"
+connection_string = "postgresql://postgres.yimsexytrswzamnslgcd:MaAm%40036355972@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=disable"
 db = SQL(connection_string)
 
 API_KEY = os.getenv("GOOGLE_API_KEY")
