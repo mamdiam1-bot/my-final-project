@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # 1. חיבור למסד הנתונים בענן (Supabase)
 # שיניתי את ה-@ בסיסמה ל-%40 כדי שהחיבור יעבור חלק
-connection_string = "postgresql://postgres:MaAm%40036355972@db.yimsexytrswzamnslgcd.supabase.co:6543/postgres?sslmode=disable"
+connection_string = "postgresql://postgres:MaAm%40036355972@db.yimsexytrswzamnslgcd.supabase.co:5432/postgres?sslmode=disable"
 db = SQL(connection_string)
 
 API_KEY = os.getenv("GOOGLE_API_KEY")
