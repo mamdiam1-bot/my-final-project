@@ -64,7 +64,7 @@ def chat():
 @app.route("/history")
 def history():
     # 3. שליפת ההיסטוריה מהענן
-    chats = db.execute("SELECT * FROM chats ORDER BY id DESC")
+    chats = db("SELECT * FROM chats ORDER BY id DESC")
     return render_template("history.html", chats=chats)
 
 if __name__ == "__main__":
