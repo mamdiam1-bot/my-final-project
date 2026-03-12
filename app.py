@@ -8,8 +8,6 @@ from cs50 import SQL
 load_dotenv(override=True)
 app = Flask(__name__)
 
-# 1. חיבור למסד הנתונים בענן (Supabase)
-# שיניתי את ה-@ בסיסמה ל-%40 כדי שהחיבור יעבור חלק
 connection_string = "postgresql://postgres:MaAm%40036355972@db.yimsexytrswzamnslgcd.supabase.co:6543/postgres?sslmode=disable"
 db = SQL(connection_string)
 
@@ -49,25 +47,22 @@ def chat():
         if response.status_code == 200:
             reply = response_data['candidates'][0]['content']['parts'][0]['text']
 
-            # 2. שמירה ל-Supabase
             db("INSERT INTO chats (user_msg, bot_res, lang) VALUES (:u, :r, :l)",
                u=user_input, r=reply, l="Hebrew")
 
             return jsonify({"reply": reply})
         else:
             print(f"Google API Error: {response.text}")
-            return jsonify({"reply": "שגיאה (404/403): המודל לא הגיב. וודא שהמפתח תקין."})
+            return jsonify({"reply": "שגיאה (404/403): המודל לא הגיב."})
 
     except Exception as e:
         return jsonify({"reply": f"שגיאת תקשורת: {str(e)}"})
 
 @app.route("/history")
 def history():
-    # 3. שליפת ההיסטוריה מהענן
     chats = db("SELECT * FROM chats ORDER BY id DESC")
     return render_template("history.html", chats=chats)
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
