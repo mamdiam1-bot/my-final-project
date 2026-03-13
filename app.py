@@ -22,45 +22,40 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_input = request.form.get("message", "")
-    image_file = request.files.get("image")
+    user_message = request.json.get("message")
+    if not user_message:
+        return jsonify({"reply": "לא התקבלה הודעה."})
 
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
-    headers = {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': API_KEY
+    API_KEY = os.getenv("GOOGLE_API_KEY")
+    # הכתובת המדויקת שגוגל דורשת עבור המודל היציב
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        "contents": [{
+            "parts": [{
+                "text": f"אתה מורה מומחה לגיאוגרפיה והיסטוריה. ענה על השאלה הבאה: {user_message}"
+            }]
+        }]
     }
-    parts = [{"text": f"ענה כמורה לגיאוגרפיה והיסטוריה בעברית. אל תשלח פקודות חיצוניות, רק טקסט: {user_input}"}]
-
-    if image_file:
-        try:
-            image_data = base64.b64encode(image_file.read()).decode('utf-8')
-            parts.append({
-                "inline_data": {
-                    "mime_type": image_file.content_type,
-                    "data": image_data
-                }
-            })
-        except Exception as e:
-            print(f"שגיאה בתמונה: {e}")
-
-    payload = {"contents": [{"parts": parts}]}
 
     try:
         response = requests.post(url, headers=headers, json=payload)
         response_data = response.json()
-
+        
         if response.status_code == 200:
-            reply = response_data['candidates'][0]['content']['parts'][0]['text']
-            db.execute("INSERT INTO chats (user_msg, bot_res, lang) VALUES (:u, :r, :l)",
-                       u=user_input, r=reply, l="Hebrew")
-            return jsonify({"reply": reply})
+            if 'candidates' in response_data and response_data['candidates']:
+                reply = response_data['candidates'][0]['content']['parts'][0]['text']
+                return jsonify({"reply": reply})
+            else:
+                return jsonify({"reply": "המודל החזיר תשובה ריקה."})
         else:
-            return jsonify({"reply": "שגיאה: המודל לא הגיב."})
-
+            # זה ידפיס ללוג של Render את השגיאה המדויקת אם תהיה כזו
+            print(f"Error from Google: {response_data}")
+            return jsonify({"reply": "שגיאה בתקשורת עם המודל."})
+            
     except Exception as e:
-        return jsonify({"reply": f"שגיאת תקשורת: {str(e)}"})
-
+        return jsonify({"reply": f"שגיאת מערכת: {str(e)}"})
 @app.route("/history")
 def history():
     chats = db.execute("SELECT * FROM chats ORDER BY id DESC")
