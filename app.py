@@ -22,17 +22,19 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    # פתרון לשגיאת ה-415: מאלץ קריאת JSON גם אם ה-Header חסר
-    try:
-        data = request.get_json(force=True, silent=True)
-        if not data or "message" not in data:
-            return jsonify({"reply": "לא התקבלה הודעה תקינה בצד השרת."})
-        user_message = data["message"]
-    except Exception as e:
-        return jsonify({"reply": f"שגיאה בעיבוד הבקשה: {str(e)}"})
+    # קבלת הנתונים בצורה גמישה
+    data = request.get_json(force=True, silent=True) or request.form
+    
+    # בדיקה של כמה שמות אפשריים למשתנה ההודעה
+    user_message = data.get("message") or data.get("text") or data.get("msg")
+    
+    if not user_message:
+        # הדפסה ללוג כדי שנראה מה כן הגיע אם זה נכשל
+        print(f"DEBUG: Received data: {data}")
+        return jsonify({"reply": "השרת קיבל את הבקשה אבל לא מצא את הטקסט של השאלה."})
 
     API_KEY = os.getenv("GOOGLE_API_KEY")
-    # ה-URL המדויק שעובד ב-Render (גרסת בטא עם מודל יציב)
+    # המשך הקוד עם ה-URL וה-API...    # ה-URL המדויק שעובד ב-Render (גרסת בטא עם מודל יציב)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     headers = {'Content-Type': 'application/json'}
