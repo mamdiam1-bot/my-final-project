@@ -21,7 +21,7 @@ def chat():
     api_key = os.getenv("GOOGLE_API_KEY")
     
     # השורה המעודכנת שביקשת (פנייה ישירה ל-v1)
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-Pro:generateContent?key={api_key}"
     
     # מבנה הנתונים שגוגל מצפה לקבל
     payload = {
