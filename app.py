@@ -25,7 +25,7 @@ def chat():
     user_input = request.form.get("message", "")
     image_file = request.files.get("image")
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     headers = {
         'Content-Type': 'application/json',
         'x-goog-api-key': API_KEY
@@ -67,5 +67,5 @@ def history():
     return render_template("history.html", chats=chats)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
