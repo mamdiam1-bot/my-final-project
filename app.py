@@ -4,8 +4,9 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# הגדרת המפתח
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# הגדרת ה-API בצורה פשוטה וישירה
+api_key = os.getenv("GOOGLE_API_KEY")
+genai.configure(api_key=api_key)
 
 @app.route("/")
 def index():
@@ -13,29 +14,28 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    # קבלת הנתונים בצורה בטוחה
     data = request.get_json(force=True, silent=True) or request.form
     user_message = data.get("message") or data.get("text") or data.get("msg")
     
     if not user_message:
-        return jsonify({"reply": "לא התקבלה הודעה."})
+        return jsonify({"reply": "לא התקבלה הודעה תקינה בשרת."})
 
-    # רשימת מודלים לניסוי - גוגל משנה שמות לפעמים
-    models_to_try = ['gemini-1.5-flash', 'models/gemini-1.5-flash', 'gemini-pro']
-    
-    last_error = ""
-    for model_name in models_to_try:
-        try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(user_message)
+    try:
+        # שימוש במודל הפלאש 1.5
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(user_message)
+        
+        if response and response.text:
             return jsonify({"reply": response.text})
-        except Exception as e:
-            last_error = str(e)
-            continue # מנסה את המודל הבא ברשימה
-
-    # אם הגענו לכאן, כל הניסיונות נכשלו
-    print(f"ALL MODELS FAILED. Last error: {last_error}")
-    return jsonify({"reply": f"שגיאת תקשורת סופית: {last_error}"})
+        else:
+            return jsonify({"reply": "גוגל החזירה תשובה ריקה. וודא שהמפתח תקין."})
+            
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        return jsonify({"reply": f"שגיאת תקשורת: {str(e)}"})
 
 if __name__ == "__main__":
+    # הגדרת פורט שמתאימה ל-Render
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
