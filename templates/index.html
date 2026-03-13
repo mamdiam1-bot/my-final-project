@@ -17,12 +17,16 @@
         .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; font-size: 16px; line-height: 1.4; position: relative; }
         .user { align-self: flex-start; background-color: #dcf8c6; border-top-left-radius: 0; }
         .bot { align-self: flex-end; background-color: white; border-top-right-radius: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        #input-area { background-color: #f0f0f0; padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ccc; }
+        .message img { max-width: 100%; border-radius: 5px; margin-bottom: 5px; }
+        #input-area { background-color: #f0f0f0; padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ccc; flex-direction: column; }
+        .input-controls { display: flex; width: 100%; gap: 10px; align-items: center; }
         input[type="text"] { flex: 1; padding: 12px; border: none; border-radius: 25px; outline: none; }
         .icon-btn { background: none; border: none; font-size: 20px; color: #54656f; cursor: pointer; transition: 0.2s; }
         .icon-btn:hover { color: #075e54; }
         #send-btn { background-color: #075e54; color: white; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
-        #preview-img { max-width: 100px; display: none; border-radius: 5px; margin-bottom: 5px; }
+        #preview-container { width: 100%; display: none; margin-bottom: 5px; text-align: right; }
+        #preview-img { max-width: 100px; max-height: 100px; border-radius: 5px; border: 2px solid #075e54; }
+        .clear-preview { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; border: none; }
     </style>
 </head>
 <body>
@@ -35,11 +39,17 @@
     <div id="chat-window"></div>
 
     <div id="input-area">
-        <input type="file" id="file-input" hidden accept="image/*">
-        <button class="icon-btn" onclick="document.getElementById('file-input').click()"><i class="fas fa-camera"></i></button>
-        <button class="icon-btn" id="mic-btn"><i class="fas fa-microphone"></i></button>
-        <input type="text" id="user-input" placeholder="הקלד הודעה...">
-        <button class="icon-btn" id="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        <div id="preview-container" style="position: relative; display: none;">
+            <img id="preview-img" src="" alt="תצוגה מקדימה">
+            <button class="clear-preview" onclick="clearPreview()">&times;</button>
+        </div>
+        <div class="input-controls">
+            <input type="file" id="file-input" hidden accept="image/*" onchange="previewImage(this)">
+            <button class="icon-btn" onclick="document.getElementById('file-input').click()"><i class="fas fa-camera"></i></button>
+            <button class="icon-btn" id="mic-btn"><i class="fas fa-microphone"></i></button>
+            <input type="text" id="user-input" placeholder="הקלד הודעה...">
+            <button class="icon-btn" id="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
     </div>
 
     <script>
@@ -55,32 +65,88 @@
         const chatWindow = document.getElementById('chat-window');
         let chatHistory = [];
 
+        // פונקציה להצגת תצוגה מקדימה של התמונה
+        function previewImage(input) {
+            const container = document.getElementById('preview-container');
+            const img = document.getElementById('preview-img');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                    container.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // פונקציה לניקוי תצוגה מקדימה
+        function clearPreview() {
+            document.getElementById('file-input').value = '';
+            document.getElementById('preview-img').src = '';
+            document.getElementById('preview-container').style.display = 'none';
+        }
+
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const fileInput = document.getElementById('file-input');
             if (!input.value && !fileInput.files[0]) return;
 
-            addMessage(input.value, 'user');
-            chatHistory.push({role: 'משתמש', text: input.value});
+            const userText = input.value;
+            const hasImage = fileInput.files[0];
 
+            // יצירת הודעת משתמש (כולל תמונה אם יש)
+            if (hasImage) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    addMessage(userText, 'user', e.target.result);
+                }
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                addMessage(userText, 'user');
+            }
+            
+            chatHistory.push({role: 'משתמש', text: userText, image: hasImage ? 'תמונה צורפה' : 'ללא תמונה'});
+
+            // הכנת FormData לשליחה לשרת
             const formData = new FormData();
-            formData.append('message', input.value);
-            if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
+            formData.append('message', userText);
+            if (hasImage) formData.append('image', fileInput.files[0]);
 
+            // איפוס שדות הקלט
             input.value = '';
-            fileInput.value = '';
+            clearPreview();
 
-            const response = await fetch('/chat', { method: 'POST', body: formData });
-            const data = await response.json();
-
-            addMessage(data.reply, 'bot');
-            chatHistory.push({role: 'מורה', text: data.reply});
+            try {
+                // שליחת הבקשה עם FormData (כבר מכיל את ה-Headers הנכונים אוטומטית)
+                const response = await fetch('/chat', { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                
+                const data = await response.json();
+                addMessage(data.reply, 'bot');
+                chatHistory.push({role: 'מורה', text: data.reply});
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('חלה שגיאה בחיבור לשרת.', 'bot');
+            }
         }
 
-        function addMessage(text, side) {
+        function addMessage(text, side, imageUrl = null) {
             const div = document.createElement('div');
             div.className = `message ${side}`;
-            div.innerText = text;
+
+            // אם יש תמונה, הוסף אותה קודם
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                div.appendChild(img);
+            }
+
+            // הוספת הטקסט
+            const textDiv = document.createElement('div');
+            textDiv.innerText = text;
+            div.appendChild(textDiv);
 
             if(side === 'bot') {
                 const speakBtn = document.createElement('button');
@@ -107,7 +173,7 @@
             doc.setFont("Arial", "normal");
             let y = 10;
             chatHistory.forEach(m => {
-                doc.text(`${m.role}: ${m.text}`, 10, y, { align: 'left' });
+                doc.text(`${m.role}: ${m.text} (${m.image || ''})`, 10, y, { align: 'left' });
                 y += 10;
             });
             doc.save("chat_history.pdf");
