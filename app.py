@@ -21,7 +21,7 @@ def chat():
         return jsonify({"reply": "שגיאת מערכת: מפתח ה-API לא הוגדר בשרת."}), 500
 
     # הכתובת שעבדה לך ב-Studio (עם Gemini 1.5 Flash)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
     parts = [{"text": f"ענה כמורה לגיאוגרפיה והיסטוריה בעברית. {user_input}"}]
 
