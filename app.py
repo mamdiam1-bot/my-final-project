@@ -9,7 +9,7 @@ app = Flask(__name__)
 API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # שימוש בכתובת של מודל 1.5 Flash - תומך בטקסט ותמונות
-API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+API_URL = "https://generativelanguage.googleapis.com/v1b/models/gemini-1.5-flash:generateContent"
 
 @app.route('/')
 def index():
