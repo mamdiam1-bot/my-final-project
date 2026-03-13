@@ -22,12 +22,17 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    user_message = request.json.get("message")
-    if not user_message:
-        return jsonify({"reply": "לא התקבלה הודעה."})
+    # פתרון לשגיאת ה-415: מאלץ קריאת JSON גם אם ה-Header חסר
+    try:
+        data = request.get_json(force=True, silent=True)
+        if not data or "message" not in data:
+            return jsonify({"reply": "לא התקבלה הודעה תקינה בצד השרת."})
+        user_message = data["message"]
+    except Exception as e:
+        return jsonify({"reply": f"שגיאה בעיבוד הבקשה: {str(e)}"})
 
     API_KEY = os.getenv("GOOGLE_API_KEY")
-    # הכתובת המדויקת שגוגל דורשת עבור המודל היציב
+    # ה-URL המדויק שעובד ב-Render (גרסת בטא עם מודל יציב)
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     headers = {'Content-Type': 'application/json'}
@@ -48,14 +53,14 @@ def chat():
                 reply = response_data['candidates'][0]['content']['parts'][0]['text']
                 return jsonify({"reply": reply})
             else:
-                return jsonify({"reply": "המודל החזיר תשובה ריקה."})
+                return jsonify({"reply": "גוגל החזירה תשובה ריקה."})
         else:
-            # זה ידפיס ללוג של Render את השגיאה המדויקת אם תהיה כזו
-            print(f"Error from Google: {response_data}")
-            return jsonify({"reply": "שגיאה בתקשורת עם המודל."})
+            # הדפסה ללוג למקרה של תקלה ב-API
+            print(f"Google API Error: {response_data}")
+            return jsonify({"reply": "המודל לא הגיב לבקשה."})
             
     except Exception as e:
-        return jsonify({"reply": f"שגיאת מערכת: {str(e)}"})
+        return jsonify({"reply": f"שגיאת תקשורת: {str(e)}"})
 @app.route("/history")
 def history():
     chats = db.execute("SELECT * FROM chats ORDER BY id DESC")
