@@ -1,12 +1,13 @@
 import os
-import google.generativeai as genai
+import requests
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# הגדרת ה-API בצורה פשוטה וישירה
-api_key = os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=api_key)
+# הגדרות ה-API
+API_KEY = os.getenv("GOOGLE_API_KEY")
+# שימוש בגרסת v1 היציבה ולא ב-v1beta
+API_URL = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 @app.route("/")
 def index():
@@ -14,26 +15,30 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    # קבלת הנתונים בצורה בטוחה
     data = request.get_json(force=True, silent=True) or request.form
     user_message = data.get("message") or data.get("text") or data.get("msg")
     
     if not user_message:
-        return jsonify({"reply": "לא התקבלה הודעה תקינה בשרת."})
+        return jsonify({"reply": "לא התקבלה הודעה."})
+
+    payload = {
+        "contents": [{"parts": [{"text": user_message}]}]
+    }
 
     try:
-        # שימוש במודל הפלאש 1.5
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(user_message)
+        response = requests.post(API_URL, json=payload)
+        result = response.json()
         
-        if response and response.text:
-            return jsonify({"reply": response.text})
+        # חילוץ התשובה מהמבנה של גוגל
+        if "candidates" in result:
+            bot_reply = result["candidates"][0]["content"]["parts"][0]["text"]
+            return jsonify({"reply": bot_reply})
         else:
-            return jsonify({"reply": "גוגל החזירה תשובה ריקה. וודא שהמפתח תקין."})
+            error_msg = result.get("error", {}).get("message", "שגיאה לא ידועה")
+            return jsonify({"reply": f"גוגל החזירה שגיאה: {error_msg}"})
             
     except Exception as e:
-        print(f"ERROR: {str(e)}")
-        return jsonify({"reply": f"שגיאת תקשורת: {str(e)}"})
+        return jsonify({"reply": f"תקלה בתקשורת: {str(e)}"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
