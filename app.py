@@ -13,22 +13,18 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    # קבלת המידע בצורה גמישה (JSON או Form)
     data = request.get_json(silent=True) or request.form
     user_message = data.get("message") or data.get("text")
     
     if not user_message:
-        return jsonify({"reply": "לא קיבלתי הודעה מהצ'אט."})
+        return jsonify({"reply": "לא התקבלה הודעה."})
 
     try:
-        # שימוש בספרייה הרשמית - היא כבר תדע לבד לאיזה URL לפנות
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(user_message)
-        
         return jsonify({"reply": response.text})
-        
     except Exception as e:
-        return jsonify({"reply": f"שגיאה של המורה: {str(e)}"})
+        return jsonify({"reply": f"שגיאה: {str(e)}"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
