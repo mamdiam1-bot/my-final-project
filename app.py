@@ -10,33 +10,30 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    data = request.get_json(force=True, silent=True) or request.form
-    user_message = data.get("message")
-    
-    if not user_message:
-        return jsonify({"reply": "לא התקבלה הודעה."})
-
-    api_key = os.getenv("GOOGLE_API_KEY")
-    
-    # כתובת v1 יציבה ללא beta - הפורמט המדויק
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
-    
-    payload = {
-        "contents": [{"parts": [{"text": user_message}]}]
-    }
-
     try:
-        response = requests.post(url, json=payload)
-        result = response.json()
+        data = request.get_json()
+        user_message = data.get("message", "")
+        api_key = os.environ.get("GOOGLE_API_KEY")
         
-        if "candidates" in result:
-            bot_reply = result["candidates"][0]["content"]["parts"][0]["text"]
-            return jsonify({"reply": bot_reply})
+        # כתובת ישירה ל-Gemini 1.5 Flash
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        
+        payload = {
+            "contents": [{"parts": [{"text": user_message}]}]
+        }
+        
+        response = requests.post(url, json=payload)
+        response_data = response.json()
+        
+        if "candidates" in response_data:
+            return jsonify({"reply": response_data["candidates"][0]["content"]["parts"][0]["text"]})
         else:
-            error_msg = result.get("error", {}).get("message", "API Error")
-            return jsonify({"reply": f"שגיאת גוגל: {error_msg}"})
+            return jsonify({"reply": "שגיאת API: " + str(response_data)})
+            
     except Exception as e:
-        return jsonify({"reply": f"תקלה: {str(e)}"})
+        return jsonify({"reply": "שגיאת קוד: " + str(e)})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+    # זה החלק שגורם ל-Render לעלות או לקרוס
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
