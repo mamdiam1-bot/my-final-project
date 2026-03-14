@@ -17,8 +17,9 @@ def chat():
         return jsonify({"reply": "לא התקבלה הודעה."})
 
     api_key = os.getenv("GOOGLE_API_KEY")
-    # חזרה ל-v1beta - מסתבר שזה מה שהמפתח שלך צריך
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    # כתובת v1 יציבה ללא beta - הפורמט המדויק
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     payload = {
         "contents": [{"parts": [{"text": user_message}]}]
@@ -32,11 +33,10 @@ def chat():
             bot_reply = result["candidates"][0]["content"]["parts"][0]["text"]
             return jsonify({"reply": bot_reply})
         else:
-            error_msg = result.get("error", {}).get("message", "Unknown error")
+            error_msg = result.get("error", {}).get("message", "API Error")
             return jsonify({"reply": f"שגיאת גוגל: {error_msg}"})
     except Exception as e:
         return jsonify({"reply": f"תקלה: {str(e)}"})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
