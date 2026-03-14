@@ -15,7 +15,7 @@ def chat():
         user_message = data.get("message", "")
         api_key = os.environ.get("GOOGLE_API_KEY")
         
-        # כתובת v1beta יציבה
+        # כתובת API ישירה ומדויקת
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         payload = {"contents": [{"parts": [{"text": user_message}]}]}
@@ -24,11 +24,11 @@ def chat():
         
         if "candidates" in response_data:
             return jsonify({"reply": response_data["candidates"][0]["content"]["parts"][0]["text"]})
-        return jsonify({"reply": f"API Error: {response_data.get('error', {}).get('message', 'Unknown')}"})
+        return jsonify({"reply": "שגיאת גוגל: המפתח או המודל לא תואמים."})
     except Exception as e:
-        return jsonify({"reply": f"System Error: {str(e)}"})
+        return jsonify({"reply": f"שגיאה טכנית: {str(e)}"})
 
 if __name__ == "__main__":
-    # התיקון הקריטי עבור Render:
+    # זה התיקון הקריטי להודעת ה-No Ports שראינו בלוגים
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)
