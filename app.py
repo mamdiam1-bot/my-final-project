@@ -1,11 +1,8 @@
 import os
-import google.generativeai as genai
+import requests
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-
-# הגדרה מחוץ לפונקציה כדי לחסוך זמן טעינה
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 @app.route("/")
 def index():
@@ -19,34 +16,26 @@ def chat():
     if not user_message:
         return jsonify({"reply": "לא התקבלה הודעה."})
 
+    api_key = os.getenv("GOOGLE_API_KEY")
+    # חזרה ל-v1beta - מסתבר שזה מה שהמפתח שלך צריך
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    payload = {
+        "contents": [{"parts": [{"text": user_message}]}]
+    }
+
     try:
-        # פתרון מחוץ לקופסה: במקום לנחש URL, אנחנו מבקשים מהספרייה 
-        # עצמה למצוא את המודל הזמין.
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = requests.post(url, json=payload)
+        result = response.json()
         
-        # הגדרת בטיחות מקלה (לפעמים גוגל חוסמת תשובות וזה נראה כמו 404)
-        safety_settings = [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-        ]
-        
-        response = model.generate_content(user_message, safety_settings=safety_settings)
-        
-        if response.text:
-            return jsonify({"reply": response.text})
+        if "candidates" in result:
+            bot_reply = result["candidates"][0]["content"]["parts"][0]["text"]
+            return jsonify({"reply": bot_reply})
         else:
-            return jsonify({"reply": "גוגל חסמה את התשובה מסיבות בטיחות."})
-            
+            error_msg = result.get("error", {}).get("message", "Unknown error")
+            return jsonify({"reply": f"שגיאת גוגל: {error_msg}"})
     except Exception as e:
-        # אם זה נכשל, ננסה "מודל גיבוי" אוטומטי
-        try:
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(user_message)
-            return jsonify({"reply": response.text})
-        except:
-            return jsonify({"reply": f"שגיאה מערכתית: {str(e)}"})
+        return jsonify({"reply": f"תקלה: {str(e)}"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
