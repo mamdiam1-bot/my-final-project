@@ -1,4 +1,5 @@
 flask
 requests
 gunicorn
-google-generativeaics50
+cs50
+psycopg2-binary
